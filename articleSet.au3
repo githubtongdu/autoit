@@ -51,10 +51,18 @@ Global Const $TAG_ICON_HTML_MODE=1
 Global Const $TAG_ICON_HTML_CLEAR=2
 Global Const $TAG_ICON_TYPE=3
 
+Global Const $INI_SECTION_HOTKEY="Hotkey"
+Global Const $DEFAULT_HOTKEY_QUIT="{Esc}"
+Global Const $DEFAULT_HOTKEY_WAIT="!3"
+Global Const $DEFAULT_HOTKEY_FORMAT="!1"
+
 Global Const $INI_SECTION_NAME="General"
 Global Const $DEFAULT_SPLIT="●"
 Dim $strSplit = IniRead($INI_PATH, $INI_SECTION_NAME, "split", $DEFAULT_SPLIT)
 Global $hasAddFindStr = False
+Global $hasUsingUtil = False
+Global $startWait = TimerInit()
+Global Const $WAITFUNC_TIME_MS = 16*1024
 
 ;;--------------------------------------
 ;;自定义函数。
@@ -67,7 +75,7 @@ Func ShowTipAndWait4Add($vTitle, $vText, $vTimeoutms)
 	Local $clkCounter = 0
 	Local $doubleClkTimems = 1024
 	Local $lastClickTime = TimerInit(), $clickTime
-	While (TimerDiff($startTime) < $waitTime)
+	While (TimerDiff($startTime) < $waitTime And Not $hasUsingUtil)
 		If _IsPressed("1", $hDLL) Then
 			$clkCounter += 1
 			If $clkCounter > 1 Then ExitLoop
@@ -345,19 +353,115 @@ Func ArticleSet()
 ;~ 	EndIf
 EndFunc
 
+; 字符格式化工具
+Func StringUtils()
+	Local $txt = TxtPicker()
+;~ 	ConsoleWrite("txt = "&$txt&@CRLF)
+
+	If StringLen($txt)=0 Then		
+		Hint("提示","未获取到文本，请重试", 1*1024)
+		Return
+	EndIf
+	
+	$txt = TxtMuliNewLines($txt)
+	$txt = TxtAchrPerLine($txt)
+	$txt = TxtOnlyNumPerLine($txt)
+	
+	Send($txt, 1)
+	
+;~ 	ClipPut($txt)
+;~ 	Sleep(64)
+;~ 	Send("^v")
+;~ 	Sleep(16)
+;~ 	Send("{BS}")
+	Sleep(16)
+	Hint("","文本处理完毕", 1*1024)
+	$startWait = TimerInit()
+EndFunc
+
+; 文本拾取
+Func TxtPicker()
+	ClipPut("")
+	Send("^c")
+	Sleep(128)
+	Return ClipGet()
+EndFunc
+
+; 文本间多个空行处理
+Func TxtMuliNewLines($vTxt)
+	Local Const $REGEX_MULIY="\R{2,}"
+	Local $result = StringRegExpReplace($vTxt, $REGEX_MULIY, @CR)	
+	Return $result
+EndFunc
+
+; 一行一个字符的处理
+Func TxtAchrPerLine($vTxt)
+	Local Const $REGEX_A_CHR="(?m)^\s*(\w)\s*\R^\s*(\w)\s*\R"
+	Local Const $REGEX_A_ZH="(?m)(^\s*([\x{4e00}-\x{9fff}])\s*\R)(?=^\s*([\x{4e00}-\x{9fff}])\s*\R)"
+	Local $result = StringRegExpReplace($vTxt, $REGEX_A_CHR, "$1$2")
+	Return StringRegExpReplace($result, $REGEX_A_ZH, "$2")
+EndFunc
+
+; 一行一串数字的处理
+Func TxtOnlyNumPerLine($vTxt)
+	Local Const $REGEX_ONLY_NUM="(?m)(^\s*\d+?\b[.|、]?)\s*\R"
+	Return StringRegExpReplace($vTxt, $REGEX_ONLY_NUM, "$1")
+EndFunc
+
+; 用于提示
+Func Hint($vTitle, $vTxt, $vShowMs)
+	Local $start = TimerInit()
+	While TimerDiff($start) < $vShowMs
+		ToolTip($vTxt, Default, Default, $vTitle)
+		Sleep(64)
+	WEnd
+	ToolTip("")	
+EndFunc
+
+; 仅用于快捷键调用，不能传递参数
+Func Wait()
+;~ 	ConsoleWrite("Func Waiting()………"&@CR)
+	$startWait = TimerInit()
+	$hasUsingUtil = True
+	Hint("提示","开始前，请先选中要处理的文本……", 3*1024)
+	While TimerDiff($startWait) < $WAITFUNC_TIME_MS
+		Sleep(256)
+	WEnd
+EndFunc
+
+Func Quit()	
+;~ 	ConsoleWrite("Func Quit()…"&@CR)
+	Hint("","感谢使用……", 1*1024)
+	Exit
+EndFunc
+
+;;--------------------------------------
+;; 开始流程。
+;;--------------------------------------
 If _Singleton(@ScriptName,1) = 0 Then
 ;~ 	MsgBox(0, "已运行", "正在运行……", $SHOW_TIME_S)
-	Exit
+	Quit()
 EndIf
 
+; 设置快捷键
+Dim $hkQuit = IniRead($INI_PATH, $INI_SECTION_HOTKEY, "HkQuit", $DEFAULT_HOTKEY_QUIT)
+Dim $hkWait = IniRead($INI_PATH, $INI_SECTION_HOTKEY, "HkWait", $DEFAULT_HOTKEY_WAIT)
+Dim $hkFormat = IniRead($INI_PATH, $INI_SECTION_HOTKEY, "HkFormat", $DEFAULT_HOTKEY_FORMAT)
+HotKeySet($hkQuit, Quit)
+HotKeySet($hkWait, Wait)
+HotKeySet($hkFormat, StringUtils)
+
+; 安装 配置文件 和 图标
 FileInstall("d:\Docs\codes\autoit\articleSet.au3.ini", $INI_PATH,0)
 FileInstall("d:\Docs\type.png", $ICON_TYPE_PICKER_PATH)
 FileInstall("d:\Docs\htMode.png",$ICON_HTML_MODE_PATH,0)
 FileInstall("d:\Docs\html.png",$ICON_HTML_PATH,0)
 FileInstall("d:\Docs\clear.png",$ICON_CLEAR_PATH,0)
+
 ;MsgBox(0, "准备开始", "请在 “文章内容”编辑框中 点一下……", $WAIT_TIME_S)
 ShowTipAndWait4Add("准备开始","请在 “文章”窗口中 点两下……",$WAIT_TIME_MS)
 ;~ ShowTip("准备开始","请在 “文章”窗口中 点一下……",$WAIT_TIME_MS)
+If $hasUsingUtil Then Quit()
 If $hasAddFindStr Then ToTop()
 Sleep(256)
 
