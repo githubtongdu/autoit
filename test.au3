@@ -109,7 +109,7 @@ Local $arr=StringSplit($str, "●")
 _ArrayDisplay($arr) 
 #ce
 
-;~ #cs
+#cs
 #include <Misc.au3>
 #include <MsgBoxConstants.au3>
 
@@ -192,9 +192,50 @@ While 1
 WEnd
 DllClose($dll)
 
-;~ #ce
+#ce
 
 
+
+;#cs
+; 测试快捷键 嵌套调用 自定义方法
+Local Const $INI_PATH = @ScriptDir&"\"&@ScriptName&".ini"
+Local Const $INI_SECTION_GENERAL = "General"
+Local Const $DFT_HK_Waiting="^1"
+Local Const $DFT_HK_Demo="^2"
+Local Const $DFT_HK_Quit="{Esc}"
+
+Local $HK_Waiting = IniRead($INI_PATH, $INI_SECTION_GENERAL, "hotkeyWaiting", $DFT_HK_Waiting)
+Local $HK_Demo = IniRead($INI_PATH, $INI_SECTION_GENERAL, "hotkeyDemo", $DFT_HK_Demo)
+Local $HK_Quit = IniRead($INI_PATH, $INI_SECTION_GENERAL, "hotkeyQuit", $DFT_HK_Quit)
+
+HotKeySet($HK_Waiting, Waiting)
+HotKeySet($HK_Demo, Demo)
+HotKeySet($HK_Quit, Quit)
+
+Sleep(3000)
+
+Func Waiting()
+	ConsoleWrite("Func Waiting()………"&@CR)
+	Local $start = TimerInit()
+	While TimerDiff($start) < 16*1024
+		Sleep(256)
+	WEnd
+EndFunc
+
+Func Demo()
+	ConsoleWrite("Func Demo()… …"&@CR)
+	Local $start = TimerInit()
+	While TimerDiff($start) < 3*1024
+		ToolTip("demo")
+	WEnd
+	ToolTip("")
+EndFunc
+
+Func Quit()	
+	ConsoleWrite("Func Quit()…"&@CR)
+	Exit
+EndFunc
+;#ce
 
 
 
@@ -220,9 +261,6 @@ DllClose($dll)
 ;~ MsgBox($MB_SYSTEMMODAL, "", "Something in the region has changed!")
 
 
-
-;#cs
-;#ce
 
 ;#cs
 ;#ce
