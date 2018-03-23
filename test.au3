@@ -49,25 +49,28 @@ Example()
 
 Func Example()
     ; Write the value of 'AutoIt' to the key 'Title' and in the section labelled 'General'.
-    IniWrite(@ScriptDir &"\"&@ScriptName&".ini", "General", "Title", "AutoIt")
+	Local $iniPath=@ScriptDir &"\"&@ScriptName&".ini"
+	FileOpen($iniPath, 512)
+    IniWrite($iniPath, "General", "Title", "AutoIt÷–Œƒ≤‚ ‘“ª")
 
     ; Read the INI file for the value of 'Title' in the section labelled 'General'.
-    Local $sRead = IniRead(@ScriptDir &"\"&@ScriptName&".ini", "General", "Title", "Default Value"&@CRLF&@ScriptDir)
+    Local $sRead = IniRead($iniPath, "General", "Title", "Default Value"&@CRLF&@ScriptDir)
 
     ; Display the value returned by IniRead.
     MsgBox(4096, "", "The value of 'Title' in the section labelled 'General' is: " & $sRead)
 
     ; Delete the key labelled 'Title'.
-    IniDelete(@ScriptDir &"\"&@ScriptName&".ini", "General", "Title")
+;~     IniDelete($iniPath, "General", "Title")
 
     ; Read the INI file for the value of 'Title' in the section labelled 'General'.
-    $sRead = IniRead(@ScriptDir &"\"&@ScriptName&".ini", "General", "Title", "Default Value"&@CRLF&@ScriptDir)
+;~     $sRead = IniRead($iniPath, "General", "Title", "Default Value")
+;~     $sRead = IniRead($iniPath, "General", "Title", "Default Value"&@CRLF&@ScriptDir)
 
     ; Display the value returned by IniRead. Since there is no key stored the value will be the 'Default Value' passed to IniRead.
-    MsgBox(4096, "", "The value of 'Title' in the section labelled 'General' is: " & $sRead)
+;~     MsgBox(4096, "", "The value of 'Title' in the section labelled 'General' is: " & $sRead)
 
     ; Delete the INI file.
-    FileDelete(@ScriptDir &"\"&@ScriptName&".ini")
+;~     FileDelete($iniPath)
 EndFunc   ;==>Example
 #ce
 
@@ -96,12 +99,110 @@ $sNewDate = StringReplace($sNewDate,"/","-")
 ;~ $sNewDate = _DateAdd('s', 1087497645, "1970/01/01 00:00:00")
 MsgBox($MB_SYSTEMMODAL, "", "Date: " & $sNewDate)
 #ce
+
+#cs
 #include <Array.au3>
 Local $str=""
 ;~ Local $str="…Ú—„”¢"
 ;~ Local $str="…Ú—„”¢°ÒÃ¿”¿¬°°Ò¬Ω“ª∑´°Ò"
 Local $arr=StringSplit($str, "°Ò")
-_ArrayDisplay($arr)
+_ArrayDisplay($arr) 
+#ce
+
+;~ #cs
+#include <Misc.au3>
+#include <MsgBoxConstants.au3>
+
+;~ Local $hDLL = DllOpen("user32.dll")
+
+;~ While 1
+;~ 	If _IsPressed("10", $hDLL) Then
+;~ 		ConsoleWrite("_IsPressed - Shift Key was pressed." & @CRLF)
+;~ 		; Wait until key is released.
+;~ 		While _IsPressed("10", $hDLL)
+;~ 			Sleep(250)
+;~ 		WEnd
+;~ 		ConsoleWrite("_IsPressed - Shift Key was released." & @CRLF)
+;~ 	ElseIf _IsPressed("1B", $hDLL) Then
+;~ 		MsgBox($MB_SYSTEMMODAL, "_IsPressed", "The Esc Key was pressed, therefore we will close the application.")
+;~ 		ExitLoop
+;~ 	Else
+;~ 		ToolTip("text",Default,Default)
+;~ 	EndIf
+;~ 	Sleep(250)
+;~ WEnd
+
+;~ DllClose($hDLL)
+
+
+
+;~ Local $hDLL = DllOpen("user32.dll")
+;~ Local $startTime = TimerInit()
+;~ While (TimerDiff($startTime) < 10*1000)
+;~ 	If _IsPressed("1", $hDLL) Then
+;~ 		ExitLoop
+;~ 	; ”“º¸ºÏ≤‚≤ªµΩ
+;~ 	ElseIf _IsPressed("2", $hDLL) Then
+;~ 		ToolTip("Right pressed", Default, Default, "Demo")
+;~ 		While _IsPressed("2", $hDLL)
+;~ 			Sleep(128)
+;~ 		WEnd
+;~ 	ElseIf _IsPressed("166", $hDLL) Then
+;~ 		ToolTip("Browser Back pressed", Default, Default, "Demo")
+;~ 		While _IsPressed("166", $hDLL)
+;~ 			Sleep(128)
+;~ 		WEnd
+;~ 	ElseIf _IsPressed("167", $hDLL) Then
+;~ 		ToolTip("Browser Back pressed", Default, Default, "Demo")
+;~ 		While _IsPressed("167", $hDLL)
+;~ 			Sleep(128)
+;~ 		WEnd
+;~ 	ElseIf _IsPressed("4", $hDLL) Then
+;~ 		ToolTip("Middle pressed", Default, Default, "Demo")
+;~ 		While _IsPressed("4", $hDLL)
+;~ 			Sleep(128)
+;~ 		WEnd
+;~ 	ElseIf _IsPressed("10", $hDLL) Then
+;~ 		ToolTip("SHIFT pressed", Default, Default, "Demo")
+;~ 		While _IsPressed("10", $hDLL)
+;~ 			Sleep(128)
+;~ 		WEnd
+;~ 	ElseIf _IsPressed("11", $hDLL) Then
+;~ 		ToolTip("CONTROL pressed", Default, Default, "Demo")
+;~ 		While _IsPressed("11", $hDLL)
+;~ 			Sleep(128)
+;~ 		WEnd
+;~ 	Else		
+;~ 		ToolTip("waiting°≠°≠", Default, Default, "Demo")
+;~ 	EndIf
+;~ 	Sleep(128)
+;~ WEnd
+;~ ToolTip("")
+;~ DllClose($hDLL)
+
+$dll = DllOpen("user32.dll")
+ 
+While 1
+    Sleep(250)
+    For $iX = 1 To 254
+        If _IsPressed(Hex($iX), $dll) Then
+            ConsoleWrite("0x" & Hex($iX, 2) & @LF)
+        EndIf
+    Next
+WEnd
+DllClose($dll)
+
+;~ #ce
+
+
+
+
+
+
+
+
+
+
 
 
 ; Wait until something changes in the region 0,0 to 50,50
@@ -119,3 +220,15 @@ _ArrayDisplay($arr)
 ;~ MsgBox($MB_SYSTEMMODAL, "", "Something in the region has changed!")
 
 
+
+;#cs
+;#ce
+
+;#cs
+;#ce
+
+;#cs
+;#ce
+
+;#cs
+;#ce

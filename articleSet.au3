@@ -1,6 +1,3 @@
-#Region converted Directives from D:\downloads\kits\articleSet.au3.ini
-#EndRegion converted Directives from D:\downloads\kits\articleSet.au3.ini
-;
 #include <Date.au3>
 #include <Misc.au3>
 #include <Array.au3>
@@ -9,7 +6,7 @@
 #include <af_search_pic.au3>;包含阿福源代码文件到脚本中
 
 #Region 
-#AutoIt3Wrapper_Res_File_Add="d:\downloads\kits\articleSet.au3.ini"
+#AutoIt3Wrapper_Res_File_Add="d:\Docs\codes\autoit\articleSet.au3.ini"
 #AutoIt3Wrapper_Res_File_Add="d:\Docs\type.png"
 #AutoIt3Wrapper_Res_File_Add="d:\Docs\htMode.png"
 #AutoIt3Wrapper_Res_File_Add="d:\Docs\html.png"
@@ -35,7 +32,7 @@ Global Const $REGEX_BLANK_TAILER="(?m)(?|[ |　]*<br\b[^>]*/>|([ |　]*&nbsp;)|[
 ;Global Const $REGEX_BLANK_TAILER="(?m)<br\b[^>]*>(\s*</p>)"
 Global Const $replaceMult = "<br\>"
 Global Const $SHOW_TIME_S=1
-Global Const $WAIT_TIME_S=3
+Global Const $WAIT_TIME_S=4
 Global Const $WAIT_TIME_MS=$WAIT_TIME_S*1000
 Global Const $TIME_UI_RESPONSE_MS=64
 Global Const $TIME_CAPTURE_S=32
@@ -55,10 +52,74 @@ Global Const $TAG_ICON_HTML_CLEAR=2
 Global Const $TAG_ICON_TYPE=3
 
 Global Const $INI_SECTION_NAME="General"
+Global Const $DEFAULT_SPLIT="●"
+Dim $strSplit = IniRead($INI_PATH, $INI_SECTION_NAME, "split", $DEFAULT_SPLIT)
+Global $hasAddFindStr = False
 
 ;;--------------------------------------
 ;;自定义函数。
 ;;--------------------------------------
+Func ShowTipAndWait4Add($vTitle, $vText, $vTimeoutms)
+	Local $hDLL = DllOpen("user32.dll")
+	Local $startTime = TimerInit()
+	Local $waitTime = $vTimeoutms
+	Local $findStr = IniRead($INI_PATH, $INI_SECTION_NAME, "findStr", "")
+	Local $clkCounter = 0
+	Local $doubleClkTimems = 1024
+	Local $lastClickTime = TimerInit(), $clickTime
+	While (TimerDiff($startTime) < $waitTime)
+		If _IsPressed("1", $hDLL) Then
+			$clkCounter += 1
+			If $clkCounter > 1 Then ExitLoop
+			If TimerDiff($lastClickTime) > $doubleClkTimems Then
+				$clkCounter = 0
+			EndIf
+			$lastClickTime = TimerInit()
+			While _IsPressed("1", $hDLL)
+				Sleep(128)
+			WEnd
+		ElseIf _IsPressed("4", $hDLL) Then
+			ExitLoop
+		; 按下Shift键时，添加需替换的关键词
+		ElseIf _IsPressed("10", $hDLL) Then
+			ClipPut("")
+			Send("^c")
+			Local $txt = ClipGet()
+			If StringLen($txt) > 0 Then
+				$findStr = IniRead($INI_PATH, $INI_SECTION_NAME, "findStr", "")
+				Local $arrFindStr = StringSplit($findStr, $strSplit)
+				If Not FindStrInArray($arrFindStr, $txt) Then
+					Local $find2Write = (StringLen($findStr)) ? $findStr&$strSplit&$txt : $txt
+					IniWrite2($INI_PATH, $INI_SECTION_NAME, "findStr", $find2Write)
+				EndIf
+				ToolTip(Chr(34)&$txt&Chr(34)&" 已添加", Default, Default, "SHIFT pressed")
+				$startTime=TimerInit()
+				$waitTime=$vTimeoutms*3
+				$hasAddFindStr = True
+			Else
+				ToolTip("")
+				$findStr = IniRead($INI_PATH, $INI_SECTION_NAME, "findStr", "")
+				If StringLen($findStr)=0 Then ExitLoop
+				Local $showStr = StringReplace($findStr,$strSplit,@CRLF)
+				Local $sel = MsgBox(32+1+256,"提示","是否清除已添加的关键词："&@CRLF&"────────────────"&@CRLF&$showStr)
+				If $sel = 1 Then
+					IniWrite2($INI_PATH, $INI_SECTION_NAME, "findStr", "")
+				EndIf
+			EndIf
+			While _IsPressed("10", $hDLL)
+				Sleep(128)
+			WEnd
+			ClipPut("")
+		Else
+			ToolTip($vText, Default, Default, $vTitle)
+		EndIf		
+		Sleep(128)
+	WEnd
+	ToolTip("")
+	DllClose($hDLL)
+;~ 	Exit
+EndFunc
+
 Func ShowTip($vTitle, $vText, $vTimeoutms)
 	Local $startTime = TimerInit()
 	While (Not _IsPressed("01") And TimerDiff($startTime) < $vTimeoutms)
@@ -66,6 +127,30 @@ Func ShowTip($vTitle, $vText, $vTimeoutms)
 		Sleep(128)
 	WEnd
 	ToolTip("")
+EndFunc
+
+Func IniWrite2($vPath, $vSection, $vKey, $vValue)
+	FileOpen($vPath, 512)
+	IniWrite($vPath,$vSection,$vKey,$vValue)
+	FileClose($vPath)
+EndFunc
+
+Func FindStrInArray($vArray, $vSubString)
+	Local $len = UBound($vArray)
+	If StringLen($vSubString) = 0 Then Return True
+	If $len > 0 Then
+		Local $item;
+		For $i = 0 To $len-1
+			$item = $vArray[$i]
+			If $item = $vSubString Then Return True
+		Next
+	EndIf
+	Return False
+EndFunc
+
+Func ToTop()
+	Send("^{HOME}")
+	Send("{PGUP}")
 EndFunc
 
 Func IconNotFound($vTag, $vMsg)
@@ -265,13 +350,15 @@ If _Singleton(@ScriptName,1) = 0 Then
 	Exit
 EndIf
 
-FileInstall("d:\downloads\kits\articleSet.au3.ini", $INI_PATH,0)
+FileInstall("d:\Docs\codes\autoit\articleSet.au3.ini", $INI_PATH,0)
 FileInstall("d:\Docs\type.png", $ICON_TYPE_PICKER_PATH)
 FileInstall("d:\Docs\htMode.png",$ICON_HTML_MODE_PATH,0)
 FileInstall("d:\Docs\html.png",$ICON_HTML_PATH,0)
 FileInstall("d:\Docs\clear.png",$ICON_CLEAR_PATH,0)
 ;MsgBox(0, "准备开始", "请在 “文章内容”编辑框中 点一下……", $WAIT_TIME_S)
-ShowTip("准备开始","请在 “文章”窗口中 点一下……",$WAIT_TIME_MS)
+ShowTipAndWait4Add("准备开始","请在 “文章”窗口中 点两下……",$WAIT_TIME_MS)
+;~ ShowTip("准备开始","请在 “文章”窗口中 点一下……",$WAIT_TIME_MS)
+If $hasAddFindStr Then ToTop()
 Sleep(256)
 
 ArticleSet()
@@ -387,8 +474,8 @@ Func procCustomStr()
 	Local $replaceStr = IniRead($INI_PATH, $INI_SECTION_NAME, "replaceStr", "")
 	
 	If StringLen($findStr) > 0 Then
-		Local $arrFind = StringSplit($findStr, "●")
-		Local $arrReplace = StringSplit($replaceStr, "●")
+		Local $arrFind = StringSplit($findStr,$strSplit)
+		Local $arrReplace = StringSplit($replaceStr, $strSplit)
 		
 		For $i = 1 To $arrFind[0]
 			Local $itemFind=$arrFind[$i]
@@ -414,8 +501,8 @@ Func procCustomRegex()
 	Local $replaceStrReg = IniRead($INI_PATH, $INI_SECTION_NAME, "replaceStrReg", "")
 	
 	If StringLen($findStrReg) > 0 Then
-		Local $arrFind = StringSplit($findStrReg, "●")
-		Local $arrReplace = StringSplit($replaceStrReg, "●")
+		Local $arrFind = StringSplit($findStrReg, $strSplit)
+		Local $arrReplace = StringSplit($replaceStrReg, $strSplit)
 		
 		For $i = 1 To $arrFind[0]
 			Local $itemFind=$arrFind[$i]
@@ -433,6 +520,8 @@ Func procCustomRegex()
 	
 	Return $txt
 EndFunc
+
+; 添加要搜索的
 
 ; 自定义字符替换
 $noBlank = procCustomStr()
@@ -479,8 +568,7 @@ If $aPosMsg <>"" Then
 	Local $array=StringSplit($aPosMsg,",",2)
 	MouseClick($MOUSE_CLICK_PRIMARY, $array[0]+$array[2]/2, $array[1]+$array[3]/2)
 	Sleep(128)
-	Send("^{HOME}")
-	Send("{PGUP}")
+	ToTop()
 Else
 	IconNotFound($TAG_ICON_HTML_MODE, $MSG_ICON_HTML_MODE)
 EndIf
