@@ -356,9 +356,9 @@ EndFunc
 ; 字符格式化工具
 Func StringUtils()
 	Local $txt = TxtPicker()
-;~ 	ConsoleWrite("txt = "&$txt&@CRLF)
+	Local $lenRaw = StringLen($txt)
 
-	If StringLen($txt)=0 Then		
+	If $lenRaw=0 Then		
 		Hint("提示","未获取到文本，请重试", 1*1024)
 		Return
 	EndIf
@@ -366,16 +366,21 @@ Func StringUtils()
 	$txt = TxtMuliNewLines($txt)
 	$txt = TxtAchrPerLine($txt)
 	$txt = TxtOnlyNumPerLine($txt)
+;~ 	ConsoleWrite("StringUtils:"&@CRLF&"lenRaw = "&$lenRaw&" , lenAfter = "&StringLen($txt)&@CRLF)
 	
-	Send($txt, 1)
+	If $lenRaw > StringLen($txt) Then
+		Send($txt, 1)
+		Sleep(16)
+		Hint("","文本处理完毕", 1*1024)
+	Else
+		Hint("","看起来，格式正常(⊙o⊙)？)", 1*1024)
+	EndIf
 	
 ;~ 	ClipPut($txt)
 ;~ 	Sleep(64)
 ;~ 	Send("^v")
 ;~ 	Sleep(16)
 ;~ 	Send("{BS}")
-	Sleep(16)
-	Hint("","文本处理完毕", 1*1024)
 	$startWait = TimerInit()
 EndFunc
 
@@ -390,7 +395,11 @@ EndFunc
 ; 文本间多个空行处理
 Func TxtMuliNewLines($vTxt)
 	Local Const $REGEX_MULIY="\R{2,}"
-	Local $result = StringRegExpReplace($vTxt, $REGEX_MULIY, @CR)	
+	Local $result = $vTxt
+	If StringRegExp($vTxt, $REGEX_MULIY) = 1 Then
+		$result = StringRegExpReplace($result, $REGEX_MULIY, @CR)
+	EndIf
+;~ 	ConsoleWrite("TxtMuliNewLines:"&@CRLF&"input:"&@CRLF&$vTxt&@CRLF&"output:"&@CRLF&$result&@CRLF)
 	Return $result
 EndFunc
 
@@ -398,14 +407,27 @@ EndFunc
 Func TxtAchrPerLine($vTxt)
 	Local Const $REGEX_A_CHR="(?m)^\s*(\w)\s*\R^\s*(\w)\s*\R"
 	Local Const $REGEX_A_ZH="(?m)(^\s*([\x{4e00}-\x{9fff}])\s*\R)(?=^\s*([\x{4e00}-\x{9fff}])\s*\R)"
-	Local $result = StringRegExpReplace($vTxt, $REGEX_A_CHR, "$1$2")
-	Return StringRegExpReplace($result, $REGEX_A_ZH, "$2")
+	Local $result = $vTxt
+	If StringRegExp($vTxt, $REGEX_A_CHR) = 1 Then
+		$result = StringRegExpReplace($result, $REGEX_A_CHR, "$1$2")
+	EndIf
+;~ 	ConsoleWrite("TxtAchrPerLine:char"&@CRLF&"input:"&@CRLF&$vTxt&@CRLF&"output:"&@CRLF&$result&@CRLF)
+	If StringRegExp($vTxt, $REGEX_A_ZH) = 1 Then
+		$result = StringRegExpReplace($result, $REGEX_A_ZH, "$2")
+	EndIf
+;~ 	ConsoleWrite("TxtAchrPerLine:zh"&@CRLF&"input:"&@CRLF&$vTxt&@CRLF&"output:"&@CRLF&$result&@CRLF)
+	Return $result
 EndFunc
 
 ; 一行一串数字的处理
 Func TxtOnlyNumPerLine($vTxt)
 	Local Const $REGEX_ONLY_NUM="(?m)(^\s*\d+?\b[.|、]?)\s*\R"
-	Return StringRegExpReplace($vTxt, $REGEX_ONLY_NUM, "$1")
+	Local $result = $vTxt
+	If StringRegExp($vTxt, $REGEX_ONLY_NUM) = 1 Then
+		$result = StringRegExpReplace($result, $REGEX_ONLY_NUM, "$1")
+	EndIf
+;~ 	ConsoleWrite("TxtOnlyNumPerLine:"&@CRLF&"input:"&@CRLF&$vTxt&@CRLF&"output:"&@CRLF&$result&@CRLF)
+	Return $result
 EndFunc
 
 ; 用于提示
